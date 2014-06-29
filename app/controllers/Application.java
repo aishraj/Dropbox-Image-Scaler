@@ -6,11 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.plugin.RedisPlugin;
 import org.apache.commons.codec.binary.Hex;
-import org.markdown4j.Markdown4jProcessor;
+import org.imgscalr.Scalr;
 import play.Logger;
 import play.Play;
 import play.libs.F.Promise;
-import play.mvc.*;
+import play.mvc.BodyParser;
+import play.mvc.Controller;
+import play.mvc.Http;
+import play.mvc.Result;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import views.html.done;
@@ -18,8 +21,9 @@ import views.html.index;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
@@ -236,23 +240,23 @@ public class Application extends Controller {
             }
             if (result != null) {
                for ( DbxDelta.Entry<DbxEntry> entry :  result.entries) {
-                    if (entry.metadata == null || entry.metadata.isFolder() || !entry.lcPath.endsWith(".md")) {
+                    if (entry.metadata == null || entry.metadata.isFolder() || !entry.lcPath.endsWith(".png")) {
                         continue;
                     }
                    File targetFile;
                    DbxEntry.File dropboxFile;
+                   BufferedImage image = null;
                    try {
-                       targetFile = File.createTempFile("dropbox_markdown","temp");
+                       targetFile = File.createTempFile("dropbox_shrinker", "temp.jpg");
                    } catch (IOException e) {
                        log.error("Unable to create a temp file to acquire from dropbox",e);
                        play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
                        return false;
                    }
                    String markDownContent;
-                   try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
-                       dropboxFile = dropboxClient.getFile(entry.lcPath,null,byteArrayOutputStream);
-                       markDownContent = new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-
+                   try (OutputStream fileOutputStream = new FileOutputStream(targetFile)) {
+                       dropboxFile = dropboxClient.getFile(entry.lcPath,null,fileOutputStream);
+                       image = ImageIO.read(targetFile);
                    } catch (IOException e) {
                        log.error("Unable to create output stream for the file",e);
                        play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
@@ -262,19 +266,26 @@ public class Application extends Controller {
                        play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
                        return false;
                    }
-                   String htmlContent;
+                   image = Scalr.resize(image,300);
+                   ByteArrayOutputStream os = new ByteArrayOutputStream();
                    try {
-                       htmlContent = new Markdown4jProcessor().process(markDownContent);
+                       ImageIO.write(image, "jpg", os);
                    } catch (IOException e) {
                        log.error("Unable to convert markdown to html content",e);
                        play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
                        return false;
                    }
+                   InputStream inputStream1 = new ByteArrayInputStream(os.toByteArray());
+                   if (image == null) {
+                       log.error("Unable to scale down image");
+                       play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
+                       return false;
+                   }
                    String fileName = entry.metadata.path.substring(0,entry.metadata.path.length()-3);
-                   fileName = fileName + ".html";
-                   try (InputStream inputStream = new ByteArrayInputStream(htmlContent.getBytes())) {
+                   fileName = fileName + "_" + ".jpg";
+                   try {
                        DbxEntry.File uploadedFile = dropboxClient.uploadFile(fileName, DbxWriteMode.force(),
-                               htmlContent.length(), inputStream);
+                               os.toByteArray().length, inputStream1);
                        System.out.println("uploaded file of size" + uploadedFile.humanSize);
                    } catch (IOException e) {
                        log.error("IO Exception while uploading file : {} ", e);

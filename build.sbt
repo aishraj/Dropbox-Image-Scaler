@@ -19,4 +19,8 @@ libraryDependencies += "com.typesafe" %% "play-plugins-redis" % "2.2.1"
 
 libraryDependencies += "org.commonjava.googlecode.markdown4j" % "markdown4j" % "2.2-cj-1.0"
 
+libraryDependencies += "org.imgscalr" % "imgscalr-lib" % "4.2"
+
 resolvers += "pk11 repo" at "http://pk11-scratch.googlecode.com/svn/trunk"
+
+resolvers += "The Buzz Media Maven Repository" at "http://maven.thebuzzmedia.com"
