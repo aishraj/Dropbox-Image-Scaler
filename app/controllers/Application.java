@@ -240,7 +240,7 @@ public class Application extends Controller {
             }
             if (result != null) {
                for ( DbxDelta.Entry<DbxEntry> entry :  result.entries) {
-                    if (entry.metadata == null || entry.metadata.isFolder() || !entry.lcPath.endsWith(".png")) {
+                    if (entry.metadata == null || entry.metadata.isFolder() || !entry.lcPath.endsWith(".jpg")) {
                         continue;
                     }
                    File targetFile;
@@ -266,7 +266,7 @@ public class Application extends Controller {
                        play.Play.application().plugin(RedisPlugin.class).jedisPool().returnResource(redisClient);
                        return false;
                    }
-                   image = Scalr.resize(image,300);
+                   image = Scalr.resize(image,500);
                    ByteArrayOutputStream os = new ByteArrayOutputStream();
                    try {
                        ImageIO.write(image, "jpg", os);
@@ -282,7 +282,7 @@ public class Application extends Controller {
                        return false;
                    }
                    String fileName = entry.metadata.path.substring(0,entry.metadata.path.length()-3);
-                   fileName = fileName + "_" + ".jpg";
+                   fileName = fileName + "_small_" + ".jpg";
                    try {
                        DbxEntry.File uploadedFile = dropboxClient.uploadFile(fileName, DbxWriteMode.force(),
                                os.toByteArray().length, inputStream1);
