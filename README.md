@@ -1,7 +1,6 @@
 #Dropbox Webhooks Java
 
-This is a Java clone of [Dropbox Webhooks Example](https://www.dropbox.com/developers/webhooks/tutorial).
-Please feel free to send in fork and send pull requests and/or try something similar/better in Java/Scala.
+This is a Dropbox application which lets you automatically scale down image files put in the dropbox app folder.
 
 ##To Run
 
@@ -22,4 +21,4 @@ Please feel free to send in fork and send pull requests and/or try something sim
 
 ### See it running 
 
-You can take it for a spin [here](https://quiet-thicket-8664.herokuapp.com).
+You can take it for a spin [here](https://whispering-everglades-1877.herokuapp.com).
